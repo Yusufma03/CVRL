@@ -1,7 +1,7 @@
 # CVRL
 This repo contains the code for the CoRL 2020 paper
 
-Xiao Ma, Siwei Chen, David Hsu, Wee Sun Lee: Contrastive Variational Model-Based Reinforcement Learning for Complex Observations. In Proc. 4th Conference on Robot Learning. [paper](https://arxiv.org/abs/2008.02430) [project](https://sites.google.com/view/cvrl/home)
+Xiao Ma, Siwei Chen, David Hsu, Wee Sun Lee: Contrastive Variational Model-Based Reinforcement Learning for Complex Observations. In Proc. 4th Conference on Robot Learning. [[paper]](https://arxiv.org/abs/2008.02430) [[project]](https://sites.google.com/view/cvrl/home)
 
 The code is coming soon.
 
