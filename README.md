@@ -3,7 +3,7 @@ This repo contains the tensorflow 2.0 implementation for the CoRL 2020 paper
 
 Xiao Ma, Siwei Chen, David Hsu, Wee Sun Lee: Contrastive Variational Model-Based Reinforcement Learning for Complex Observations. In Proc. 4th Conference on Robot Learning. [[paper]](https://arxiv.org/abs/2008.02430)
 
-For visualzations, please refer to our [project page](https://sites.google.com/view/cvrl/home)
+For visualzations, please visit our [project page](https://sites.google.com/view/cvrl/home)
 
 ## Setup
 ```
