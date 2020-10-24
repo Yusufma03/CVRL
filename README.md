@@ -1,5 +1,5 @@
 # CVRL
-This repo contains the tensorflow 2.0 implementation for the CoRL 2020 paper
+This repo contains the Tensorflow 2.0 implementation for the CoRL 2020 paper
 
 Xiao Ma, Siwei Chen, David Hsu, Wee Sun Lee: Contrastive Variational Model-Based Reinforcement Learning for Complex Observations. In Proc. 4th Conference on Robot Learning. [[paper]](https://arxiv.org/abs/2008.02430)
 
@@ -14,7 +14,7 @@ pip3 install --user pandas
 pip3 install --user matplotlib
 ```
 
-You will need the Mujoco license to run the Mujoco tasks. 
+You will need the [Mujoco license](https://www.roboti.us/license.html) to run the Mujoco tasks. 
 
 To play with the natural Mujoco tasks, download the natural Mujoco background dataset from [here](https://drive.google.com/drive/folders/1r7i1PYY_Yhfhu7T8hlhi2DJtaeD6lIvp?usp=sharing) and put it at the root of this folder. 
 
