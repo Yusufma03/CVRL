@@ -14,11 +14,11 @@ import pathlib
 import sys
 import time
 import soft_actor_critic
-
+from datetime import datetime
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # enable headless training on servers for mujoco
-os.environ['MUJOCO_GL'] = 'egl'
+
 
 tf.executing_eagerly()
 
@@ -504,6 +504,7 @@ def main(config):
     if config.precision == 16:
         prec.set_policy(prec.Policy('mixed_float16'))
     config.steps = int(config.steps)
+    config.logdir = config.logdir.joinpath(config.task+str(config.seed)+datetime.now().strftime("%Y%m%d-%H%M"))
     config.logdir.mkdir(parents=True, exist_ok=True)
     print('Logdir', config.logdir)
 
