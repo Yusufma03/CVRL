@@ -196,7 +196,7 @@ class CVRL(tools.Module):
             similarity = tf.stop_gradient(similarity)
             cont_loss = self._contrastive(feat, embed, similarity)
 
-                # the contrastive / generative implementation of the observation model p(o|s)
+            # the contrastive / generative implementation of the observation model p(o|s)
             if self._c.obs_model == 'generative':
                 likes.image = tf.reduce_mean(image_pred.log_prob(data['image']))
             elif self._c.obs_model == 'contrastive':

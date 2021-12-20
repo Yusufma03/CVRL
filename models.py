@@ -153,14 +153,20 @@ class ContrastiveObsModel(tools.Module):
                 dtype='float32')(z)
 
         weight_mat = tf.matmul(z, x, transpose_b=True)
-        positive = tf.exp(weight_mat)
-        positive = tf.multiply(positive, tf.cast(s, tf.float32))
-        positive = tf.reduce_sum(positive, 1)
-        positive = tf.math.log(positive)
+        # positive = tf.exp(weight_mat)
+        # positive = tf.multiply(positive, tf.cast(s, tf.float32))
+        # positive = tf.reduce_sum(positive, 1)
+        # positive = tf.math.log(positive)
         # positive = tf.math.log(tf.reduce_sum(tf.multiply(tf.exp(weight_mat), tf.cast(s, tf.float32)), -1))
         # positive = tf.linalg.tensor_diag_part(weight_mat)
-        norm = tf.reduce_logsumexp(weight_mat, axis=1)
+        # norm = tf.reduce_logsumexp(weight_mat, axis=1)
 
+        max_weight = tf.expand_dims(tf.reduce_max(weight_mat, -1), 1)
+        positive = tf.exp(weight_mat-max_weight)
+        positive = tf.multiply(positive, tf.cast(s, tf.float32))
+        positive = tf.reduce_sum(positive, 1)
+        positive = tf.math.log(positive)+tf.reduce_max(weight_mat, -1)
+        norm = tf.reduce_logsumexp(weight_mat, axis=1)
         # compute the infonce loss and change the predicion back to float16
         info_nce = tf.cast(positive - norm, 'float16')
 
