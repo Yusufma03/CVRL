@@ -7,3 +7,4 @@ MUJOCO_LOG.TXT
 .vscode/
 *.pkl
 \.idea/
+test_logs

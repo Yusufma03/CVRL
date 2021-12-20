@@ -133,7 +133,7 @@ class ContrastiveObsModel(tools.Module):
         self.hz = hz
         self.hx = hx
 
-    def __call__(self, z, x):
+    def __call__(self, z, x, s):
         """Both inputs have the shape of [batch_sz, length, dim]. For each positive sample, we use the rest of batch_sz * length - 1 samples as negative samples
 
         Args:
@@ -153,8 +153,12 @@ class ContrastiveObsModel(tools.Module):
                 dtype='float32')(z)
 
         weight_mat = tf.matmul(z, x, transpose_b=True)
-
-        positive = tf.linalg.tensor_diag_part(weight_mat)
+        positive = tf.exp(weight_mat)
+        positive = tf.multiply(positive, tf.cast(s, tf.float32))
+        positive = tf.reduce_sum(positive, 1)
+        positive = tf.math.log(positive)
+        # positive = tf.math.log(tf.reduce_sum(tf.multiply(tf.exp(weight_mat), tf.cast(s, tf.float32)), -1))
+        # positive = tf.linalg.tensor_diag_part(weight_mat)
         norm = tf.reduce_logsumexp(weight_mat, axis=1)
 
         # compute the infonce loss and change the predicion back to float16

@@ -63,7 +63,7 @@ def define_config():
     config.weight_decay = 0.0
     config.weight_decay_pattern = r'.*'
     # Training.
-    config.batch_size = 50
+    config.batch_size = 60
     config.batch_length = 50
     config.train_every = 1000
     config.train_steps = 100
@@ -192,7 +192,9 @@ class CVRL(tools.Module):
             # if we use the generative observation model, we need to perform observation reconstruction
             image_pred = self._decode(feat)
             # compute the contrative loss directly in CVRL
-            cont_loss = self._contrastive(feat, embed)
+            similarity = self._cal_state_abs_matrix(data)
+            similarity = tf.stop_gradient(similarity)
+            cont_loss = self._contrastive(feat, embed, similarity)
 
                 # the contrastive / generative implementation of the observation model p(o|s)
             if self._c.obs_model == 'generative':
@@ -261,6 +263,32 @@ class CVRL(tools.Module):
             if tf.equal(log_images, True) and self._c.log_imgs:
                 self._image_summaries(data, embed, image_pred)
 
+    def _cal_state_abs_matrix(self, data):
+        rewards1 = tf.reshape(data['reward'], (-1, 1)) # [60*50, 1]  [BS, SEQ]
+        rewards1 = tf.expand_dims(rewards1, 1)
+        rewards1 = tf.tile(rewards1, [1, rewards1.shape[0], 1])
+
+        rewards2 = tf.reshape(data['reward'], (-1, 1))
+        rewards2 = tf.expand_dims(rewards2, 0)
+        rewards2 = tf.tile(rewards2, [rewards2.shape[1], 1, 1])
+
+
+        actions1 = tf.reshape(data['action'], (-1, data['action'].shape[-1]))  # [60*50, 6]  [BS*SEQ, dims]
+        actions1 = tf.expand_dims(actions1, 1)
+        actions1 = tf.tile(actions1, [1, actions1.shape[0], 1])
+
+
+        actions2 = tf.reshape(data['action'], (-1, data['action'].shape[-1]))
+        actions2 = tf.expand_dims(actions2, 0)
+        actions2 = tf.tile(actions2, [actions1.shape[1], 1, 1])
+        
+        # d(z_{i}, o_{j}) = W1(r(o_{i-1}, a_{i-1}, o_{i})-r(o_{j-1}, a_{j-1}, o_{j}))+W1(a_{i-1}-a_{j-1})
+        #  = W1(a_{i-1}, o_{i})-r(a_{j-1}, o_{j}))+W1(a_{i-1}-a_{j-1})
+        dis_actions = tf.reduce_mean(tf.abs(actions1-actions2), -1)
+        dis_rewards = tf.reduce_mean(tf.abs(rewards1-rewards2), -1)
+        dis = dis_actions+dis_rewards
+        similarity = tf.where(dis>0.000001, 0, 1)
+        return similarity
     def _build_model(self):
         acts = dict(
             elu=tf.nn.elu, relu=tf.nn.relu, swish=tf.nn.swish,
