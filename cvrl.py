@@ -259,7 +259,7 @@ class CVRL(tools.Module):
                 self._scalar_summaries(
                     data, feat, prior_dist, post_dist, likes, div,
                     model_loss, value_loss, actor_loss, model_norm, value_norm,
-                    actor_norm)
+                    actor_norm, similarity)
             if tf.equal(log_images, True) and self._c.log_imgs:
                 self._image_summaries(data, embed, image_pred)
 
@@ -287,7 +287,7 @@ class CVRL(tools.Module):
         dis_actions = tf.reduce_mean(tf.abs(actions1-actions2), -1)
         dis_rewards = tf.reduce_mean(tf.abs(rewards1-rewards2), -1)
         dis = dis_actions+dis_rewards
-        similarity = tf.where(dis>0.000001, 0, 1)
+        similarity = tf.where(dis>0.2, 0, 1)
         return similarity
     def _build_model(self):
         acts = dict(
@@ -405,7 +405,7 @@ class CVRL(tools.Module):
     def _scalar_summaries(
             self, data, feat, prior_dist, post_dist, likes, div,
             model_loss, value_loss, actor_loss, model_norm, value_norm,
-            actor_norm):
+            actor_norm, similarity):
         self._metrics['model_grad_norm'].update_state(model_norm)
         self._metrics['value_grad_norm'].update_state(value_norm)
         self._metrics['actor_grad_norm'].update_state(actor_norm)
@@ -418,7 +418,7 @@ class CVRL(tools.Module):
         self._metrics['value_loss'].update_state(value_loss)
         self._metrics['actor_loss'].update_state(actor_loss)
         self._metrics['action_ent'].update_state(self._actor(feat).entropy())
-
+        self._metrics['similarity'].update_state(tf.reduce_mean(tf.cast(tf.reduce_sum(similarity, -1), tf.float16)))
     def _image_summaries(self, data, embed, image_pred):
         truth = data['image'][:6] + 0.5
         recon = image_pred.mode()[:6]
