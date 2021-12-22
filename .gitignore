@@ -8,3 +8,4 @@ MUJOCO_LOG.TXT
 *.pkl
 \.idea/
 test_logs
+videos

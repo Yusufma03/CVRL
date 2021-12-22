@@ -492,3 +492,37 @@ def load_imgnet(train):
     imgnet = np.transpose(imgnet, axes=(0, 1, 3, 4, 2))
 
     return imgnet
+
+
+
+
+if __name__ == "__main__":
+    import cv2
+    name = 'train'
+    fps = 20
+    size = (64, 64)
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    with open('./natural_{}.pkl'.format(name), 'rb') as fin:
+        imgnet_train = pickle.load(fin)
+    imgnet_train = np.transpose(imgnet_train, axes=(0, 1, 3, 4, 2))
+    out = cv2.VideoWriter('/data1/why/CVRL/videos/train_video.avi', fourcc, fps, size)
+    for i in range(imgnet_train.shape[0]):
+        for j in range(imgnet_train.shape[1]):
+            frame = imgnet_train[i][j]
+            out.write(frame)
+    out.release()
+
+
+
+    name = 'valid'
+    with open('./natural_{}.pkl'.format(name), 'rb') as fin:
+        imgnet_test = pickle.load(fin)
+    imgnet_test = np.transpose(imgnet_test, axes=(0, 1, 3, 4, 2))
+    out = cv2.VideoWriter('/data1/why/CVRL/videos/test_video.avi', fourcc, fps, size)
+    for i in range(imgnet_test.shape[0]):
+        for j in range(imgnet_test.shape[1]):
+            frame = imgnet_test[i][j]
+            out.write(frame)
+    out.release()
+    
+

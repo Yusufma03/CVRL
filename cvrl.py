@@ -102,6 +102,7 @@ def define_config():
     config.trajectory_opt = True
     config.traj_opt_lr = 0.003
     config.num_samples = 20
+    config.similarity_threshold = 0.001
     return config
 
 
@@ -126,6 +127,7 @@ class CVRL(tools.Module):
         self._metrics['expl_amount']  # Create variable for checkpoint.
         self._float = prec.global_policy().compute_dtype
         self._dataset = iter(load_dataset(datadir, self._c))
+        self._similarity_threshold = config.similarity_threshold
         self._build_model()
 
     def __call__(self, obs, reset, state=None, training=True):
@@ -287,7 +289,7 @@ class CVRL(tools.Module):
         dis_actions = tf.reduce_mean(tf.abs(actions1-actions2), -1)
         dis_rewards = tf.reduce_mean(tf.abs(rewards1-rewards2), -1)
         dis = dis_actions+dis_rewards
-        similarity = tf.where(dis>0.2, 0, 1)
+        similarity = tf.where(dis>self._similarity_threshold, 0, 1)
         return similarity
     def _build_model(self):
         acts = dict(
