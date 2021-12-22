@@ -446,7 +446,8 @@ class CVRL(tools.Module):
         with (self._c.logdir / 'metrics.jsonl').open('a') as f:
             f.write(json.dumps({'step': step, **dict(metrics)}) + '\n')
         [tf.summary.scalar('agent/' + k, m) for k, m in metrics]
-        print(f'[{step}]', ' / '.join(f'{k} {v:.1f}' for k, v in metrics))
+        if step % 50000 == 0:
+            print(f'[{step}]', ' / '.join(f'{k} {v:.1f}' for k, v in metrics))
         self._writer.flush()
 
 
