@@ -1,4 +1,4 @@
-# from tensorflow.python.keras.backend import dtype
+#根据给定的路径读取参数继续训练
 import wrappers
 import tools
 import models
@@ -17,9 +17,9 @@ import time
 import soft_actor_critic
 from datetime import datetime
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-# enable headless training on servers for mujoco
 import io
+# enable headless training on servers for mujoco
+
 
 tf.executing_eagerly()
 
@@ -32,81 +32,78 @@ sys.path.append(str(pathlib.Path(__file__).parent))
 def define_config():
     config = tools.AttrDict()
     # General.
+    config.checkpoint_logdir = pathlib.Path('.')
     config.logdir = pathlib.Path('.')
-    config.seed = 0
-    config.steps = 5e6
-    config.eval_every = 1e4
-    config.log_every = 1e3
-    config.log_scalars = True
-    config.log_images = True
-    config.gpu_growth = True
-    config.precision = 16
-    # Environment.
-    config.task = 'dmc_walker_walk'
-    config.envs = 1
-    config.parallel = 'none'
-    config.action_repeat = 2
-    config.time_limit = 1000
-    config.prefill = 5000
-    config.eval_noise = 0.0
-    config.clip_rewards = 'none'
-    # Model.
-    config.deter_size = 200
-    config.stoch_size = 30
-    config.num_units = 400
-    config.dense_act = 'elu'
-    config.cnn_act = 'relu'
-    config.cnn_depth = 32
-    config.pcont = False
-    config.free_nats = 3.0
-    config.kl_scale = 1.0
-    config.pcont_scale = 10.0
-    config.weight_decay = 0.0
-    config.weight_decay_pattern = r'.*'
-    # Training.
-    config.batch_size = 60
-    config.batch_length = 50
-    config.train_every = 1000
-    config.train_steps = 100
-    config.pretrain = 100
-    config.model_lr = 6e-4
-    config.value_lr = 8e-5
-    config.actor_lr = 8e-5
-    config.grad_clip = 100.0
-    config.dataset_balance = False
-    # Behavior.
-    config.discount = 0.99
-    config.disclam = 0.95
-    config.horizon = 15
-    config.action_dist = 'tanh_normal'
-    config.action_init_std = 5.0
-    config.expl = 'additive_gaussian'
-    config.expl_amount = 0.3
-    config.expl_decay = 0.0
-    config.expl_min = 0.0
-    config.log_imgs = False
+    # config.seed = 0
+    # config.steps = 5e6
+    # config.eval_every = 1e4
+    # config.log_every = 1e3
+    # config.log_scalars = True
+    # config.log_images = True
+    # config.gpu_growth = True
+    # config.precision = 16
+    # # Environment.
+    # config.task = 'dmc_walker_walk'
+    # config.envs = 1
+    # config.parallel = 'none'
+    # config.action_repeat = 2
+    # config.time_limit = 1000
+    # config.prefill = 5000
+    # config.eval_noise = 0.0
+    # config.clip_rewards = 'none'
+    # # Model.
+    # config.deter_size = 200
+    # config.stoch_size = 30
+    # config.num_units = 400
+    # config.dense_act = 'elu'
+    # config.cnn_act = 'relu'
+    # config.cnn_depth = 32
+    # config.pcont = False
+    # config.free_nats = 3.0
+    # config.kl_scale = 1.0
+    # config.pcont_scale = 10.0
+    # config.weight_decay = 0.0
+    # config.weight_decay_pattern = r'.*'
+    # # Training.
+    # config.batch_size = 55
+    # config.batch_length = 50
+    # config.train_every = 1000
+    # config.train_steps = 100
+    # config.pretrain = 100
+    # config.model_lr = 6e-4
+    # config.value_lr = 8e-5
+    # config.actor_lr = 8e-5
+    # config.grad_clip = 100.0
+    # config.dataset_balance = False
+    # # Behavior.
+    # config.discount = 0.99
+    # config.disclam = 0.95
+    # config.horizon = 15
+    # config.action_dist = 'tanh_normal'
+    # config.action_init_std = 5.0
+    # config.expl = 'additive_gaussian'
+    # config.expl_amount = 0.3
+    # config.expl_decay = 0.0
+    # config.expl_min = 0.0
+    # config.log_imgs = False
 
-    # natural or not
-    config.natural = False
+    # # natural or not
+    # config.natural = False
 
-    # similarity images
-    config.log_simi_imgs = False
-    config.log_similarity = 5e4
-    # obs model
-    config.obs_model = 'contrastive'
+    # # obs model
+    # config.obs_model = 'contrastive'
 
-    # SAC settings
-    config.num_Qs = 2
+    # # SAC settings
+    # config.num_Qs = 2
 
-    # use dreamer and SAC for hybrid actor-critic training
-    config.use_sac = True
-    config.use_dreamer = True
+    # # use dreamer and SAC for hybrid actor-critic training
+    # config.use_sac = True
+    # config.use_dreamer = True
 
-    # use trajectory optimization
-    config.trajectory_opt = True
-    config.traj_opt_lr = 0.003
-    config.num_samples = 20
-    config.similarity_threshold = 0.001
+    # # use trajectory optimization
+    # config.trajectory_opt = True
+    # config.traj_opt_lr = 0.003
+    # config.num_samples = 20
     return config
 
 
@@ -125,7 +122,6 @@ class CVRL(tools.Module):
         self._should_pretrain = tools.Once()
         self._should_train = tools.Every(config.train_every)
         self._should_log = tools.Every(config.log_every)
-        self._should_log_similarity = tools.Every(config.log_similarity)
         self._last_log = None
         self._last_time = time.time()
         self._metrics = collections.defaultdict(tf.metrics.Mean)
@@ -133,7 +129,6 @@ class CVRL(tools.Module):
         self._float = prec.global_policy().compute_dtype
         self._dataset = iter(load_dataset(datadir, self._c))
         self._similarity_threshold = config.similarity_threshold
-
         self._build_model()
 
     def __call__(self, obs, reset, state=None, training=True):
@@ -142,20 +137,40 @@ class CVRL(tools.Module):
         if state is not None and reset.any():
             mask = tf.cast(1 - reset, self._float)[:, None]
             state = tf.nest.map_structure(lambda x: x * mask, state)
-        if self._should_train(step):
-            log = self._should_log(step)
-            n = self._c.pretrain if self._should_pretrain() else self._c.train_steps
-            print(f'Training for {n} steps.')
-            # with self._strategy.scope():
-            for train_step in range(n):
-                log_images = self._c.log_images and log and train_step == 0
-                self.train(next(self._dataset), log_images)
-            if log:
-                self._write_summaries()
-        action, state = self.policy(obs, state, training)
-        if training:
-            self._step.assign_add(len(reset) * self._c.action_repeat)
-        return action, state
+        while True:
+            if self.test_samples():
+                self._step.assign_add(1)
+
+        # if self._should_train(step):
+        #     log = self._should_log(step)
+        #     n = self._c.pretrain if self._should_pretrain() else self._c.train_steps
+        #     print(f'Training for {n} steps.')
+        #     # with self._strategy.scope():
+        #     for train_step in range(n):
+        #         log_images = self._c.log_images and log and train_step == 0
+        #         self.train(next(self._dataset), log_images)
+        #     if log:
+        #         self._write_summaries()
+        # action, state = self.policy(obs, state, training)
+        # if training:
+        #     self._step.assign_add(len(reset) * self._c.action_repeat)
+        # return action, state
+
+    def test_samples(self):
+        data = next(self._dataset)
+        similarity = self._cal_state_abs_matrix(data)
+        # similarity = tf.where(dis>self._similarity_threshold, 0, 1)
+        similarity1 = tf.where(similarity<1e-7, 1, 0)    #1表示完全相同的ob  0表示不完全相同
+        similarity2 = tf.where(similarity>0.1, 1, 0)  # 1表示很不同 0表示比较相同
+        #选择0的比较好
+        similarity = similarity1+similarity2
+        image = data['image']
+        similarity_num = similarity.numpy()
+        if np.min(similarity_num)==0:
+            np.where(similarity_num==0)
+            similarity_num[151][2588]
+        B, T, _, _, _ = image.shape
+        stored_data = {'image': data['image'], 'similarity': similarity}
 
     @tf.function
     def policy(self, obs, state, training):
@@ -184,11 +199,37 @@ class CVRL(tools.Module):
         super().load(filename)
         self._should_pretrain()
 
-    @tf.function()
+    # @tf.function()
     def train(self, data, log_images=False):
         self._train(data, log_images)
+    def _cal_state_abs_matrix(self, data):
+        rewards1 = tf.reshape(data['reward'], (-1, 1)) # [60*50, 1]  [BS, SEQ]
+        rewards1 = tf.expand_dims(rewards1, 1)
+        rewards1 = tf.tile(rewards1, [1, rewards1.shape[0], 1])
 
+        rewards2 = tf.reshape(data['reward'], (-1, 1))
+        rewards2 = tf.expand_dims(rewards2, 0)
+        rewards2 = tf.tile(rewards2, [rewards2.shape[1], 1, 1])
+
+
+        actions1 = tf.reshape(data['action'], (-1, data['action'].shape[-1]))  # [60*50, 6]  [BS*SEQ, dims]
+        actions1 = tf.expand_dims(actions1, 1)
+        actions1 = tf.tile(actions1, [1, actions1.shape[0], 1])
+
+
+        actions2 = tf.reshape(data['action'], (-1, data['action'].shape[-1]))
+        actions2 = tf.expand_dims(actions2, 0)
+        actions2 = tf.tile(actions2, [actions1.shape[1], 1, 1])
+        
+        # d(z_{i}, o_{j}) = W1(r(o_{i-1}, a_{i-1}, o_{i})-r(o_{j-1}, a_{j-1}, o_{j}))+W1(a_{i-1}-a_{j-1})
+        #  = W1(a_{i-1}, o_{i})-r(a_{j-1}, o_{j}))+W1(a_{i-1}-a_{j-1})
+        dis_actions = tf.reduce_mean(tf.abs(actions1-actions2), -1)
+        dis_rewards = tf.reduce_mean(tf.abs(rewards1-rewards2), -1)
+        dis = dis_actions+dis_rewards
+        # similarity = tf.where(dis>self._similarity_threshold, 0, 1)
+        return dis
     def _train(self, data, log_images):
+        '''
         with tf.GradientTape() as model_tape:
             embed = self._encode(data)
             post, prior = self._dynamics.observe(embed, data['action'])
@@ -200,11 +241,9 @@ class CVRL(tools.Module):
             # if we use the generative observation model, we need to perform observation reconstruction
             image_pred = self._decode(feat)
             # compute the contrative loss directly in CVRL
-            similarity = self._cal_state_abs_matrix(data)
-            similarity = tf.stop_gradient(similarity)
-            cont_loss = self._contrastive(feat, embed, similarity)
+            cont_loss = self._contrastive(feat, embed)
 
-            # the contrastive / generative implementation of the observation model p(o|s)
+                # the contrastive / generative implementation of the observation model p(o|s)
             if self._c.obs_model == 'generative':
                 likes.image = tf.reduce_mean(image_pred.log_prob(data['image']))
             elif self._c.obs_model == 'contrastive':
@@ -260,54 +299,29 @@ class CVRL(tools.Module):
 
         # if we use SAC, add the SAC training
         if self._c.use_sac:
-            self._sac._do_training(self._step, states, actions, rewards, dones)
+            training_diagnostics = self._sac._do_training(self._step, states, actions, rewards, dones)
 
         if tf.distribute.get_replica_context().replica_id_in_sync_group == 0:
             if self._c.log_scalars:
+                training_diagnostics = None if not training_diagnostics else training_diagnostics
                 self._scalar_summaries(
                     data, feat, prior_dist, post_dist, likes, div,
                     model_loss, value_loss, actor_loss, model_norm, value_norm,
-                    actor_norm, similarity)
+                    actor_norm, training_diagnostics)
             if tf.equal(log_images, True) and self._c.log_imgs:
                 self._image_summaries(data, embed, image_pred)
-            ##   增加显示编码相同的ob对应的图像
-            # if tf.equal(log_images, True) and self._c.log_simi_imgs and self._should_log_similarity(self._step.numpy().item()):
-            #     timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
-            #     file_name = self._c.logdir / f'{timestamp}.npz'
-            #     stored_data = {'image': data['image'], 'similarity': similarity.numpy()}
-            #     with io.BytesIO() as f1:
-            #         np.savez_compressed(f1, **stored_data)
-            #         f1.seek(0)
-            #         with file_name.open('wb') as f2:
-            #             f2.write(f1.read())
-
-
-    def _cal_state_abs_matrix(self, data):
-        rewards1 = tf.reshape(data['reward'], (-1, 1)) # [60*50, 1]  [BS, SEQ]
-        rewards1 = tf.expand_dims(rewards1, 1)
-        rewards1 = tf.tile(rewards1, [1, rewards1.shape[0], 1])
-
-        rewards2 = tf.reshape(data['reward'], (-1, 1))
-        rewards2 = tf.expand_dims(rewards2, 0)
-        rewards2 = tf.tile(rewards2, [rewards2.shape[1], 1, 1])
-
-
-        actions1 = tf.reshape(data['action'], (-1, data['action'].shape[-1]))  # [60*50, 6]  [BS*SEQ, dims]
-        actions1 = tf.expand_dims(actions1, 1)
-        actions1 = tf.tile(actions1, [1, actions1.shape[0], 1])
-
-
-        actions2 = tf.reshape(data['action'], (-1, data['action'].shape[-1]))
-        actions2 = tf.expand_dims(actions2, 0)
-        actions2 = tf.tile(actions2, [actions1.shape[1], 1, 1])
-        
-        # d(z_{i}, o_{j}) = W1(r(o_{i-1}, a_{i-1}, o_{i})-r(o_{j-1}, a_{j-1}, o_{j}))+W1(a_{i-1}-a_{j-1})
-        #  = W1(a_{i-1}, o_{i})-r(a_{j-1}, o_{j}))+W1(a_{i-1}-a_{j-1})
-        dis_actions = tf.reduce_mean(tf.abs(actions1-actions2), -1)
-        dis_rewards = tf.reduce_mean(tf.abs(rewards1-rewards2), -1)
-        dis = dis_actions+dis_rewards
-        similarity = tf.where(dis>self._similarity_threshold, 0, 1)
-        return similarity
+        '''
+        similarity = self._cal_state_abs_matrix(data)
+        timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
+        file_name = self._c.logdir / f'{timestamp}.npz'
+        stored_data = {'image': data['image'], 'similarity': similarity.numpy()}
+        '''
+        with io.BytesIO() as f1:
+            np.savez_compressed(f1, **stored_data)
+            f1.seek(0)
+            with file_name.open('wb') as f2:
+                f2.write(f1.read())
+        '''
     def _build_model(self):
         acts = dict(
             elu=tf.nn.elu, relu=tf.nn.relu, swish=tf.nn.swish,
@@ -344,7 +358,7 @@ class CVRL(tools.Module):
         if self._c.use_sac:
             self._sac = soft_actor_critic.SAC(self._actor, self._Qs, self._actor_opt, self._q_opts, self._actspace)
 
-        self.train(next(self._dataset))
+        # self.train(next(self._dataset))
 
     def _exploration(self, action, training):
         if training:
@@ -424,7 +438,7 @@ class CVRL(tools.Module):
     def _scalar_summaries(
             self, data, feat, prior_dist, post_dist, likes, div,
             model_loss, value_loss, actor_loss, model_norm, value_norm,
-            actor_norm, similarity):
+            actor_norm, training_diagnostics):
         self._metrics['model_grad_norm'].update_state(model_norm)
         self._metrics['value_grad_norm'].update_state(value_norm)
         self._metrics['actor_grad_norm'].update_state(actor_norm)
@@ -437,17 +451,20 @@ class CVRL(tools.Module):
         self._metrics['value_loss'].update_state(value_loss)
         self._metrics['actor_loss'].update_state(actor_loss)
         self._metrics['action_ent'].update_state(self._actor(feat).entropy())
-        self._metrics['similarity'].update_state(tf.reduce_mean(tf.cast(tf.reduce_sum(similarity, -1), tf.float16)))
+        if training_diagnostics:
+            for key, value in training_diagnostics.items():
+                self._metrics[key].update_state(value)
+
     def _image_summaries(self, data, embed, image_pred):
-        truth = data['image'][:6] + 0.5   # [6, 50, 64, 64, 3]
-        recon = image_pred.mode()[:6]  # [6, 50, 64, 64, 3]
+        truth = data['image'][:6] + 0.5
+        recon = image_pred.mode()[:6]
         init, _ = self._dynamics.observe(embed[:6, :5], data['action'][:6, :5])
-        init = {k: v[:, -1] for k, v in init.items()} #  final post (6, 30)+(6, 200)  
+        init = {k: v[:, -1] for k, v in init.items()}
         prior = self._dynamics.imagine(data['action'][:6, 5:], init)
-        openl = self._decode(self._dynamics.get_feat(prior)).mode() # (6, 45, 30)+(6, 45, 200)
-        model = tf.concat([recon[:, :5] + 0.5, openl + 0.5], 1)  # (6, 50, 64, 64, 3)
+        openl = self._decode(self._dynamics.get_feat(prior)).mode()
+        model = tf.concat([recon[:, :5] + 0.5, openl + 0.5], 1)
         error = (model - truth + 1) / 2
-        openl = tf.concat([truth, model, error], 2)  # [6, 50, 192, 64, 3]
+        openl = tf.concat([truth, model, error], 2)
         tools.graph_summary(
             self._writer, tools.video_summary, 'agent/openl', openl)
 
@@ -463,8 +480,7 @@ class CVRL(tools.Module):
         with (self._c.logdir / 'metrics.jsonl').open('a') as f:
             f.write(json.dumps({'step': step, **dict(metrics)}) + '\n')
         [tf.summary.scalar('agent/' + k, m) for k, m in metrics]
-        if step % 50000 == 0:
-            print(f'[{step}]', ' / '.join(f'{k} {v:.1f}' for k, v in metrics))
+        print(f'[{step}]', ' / '.join(f'{k} {v:.1f}' for k, v in metrics))
         self._writer.flush()
 
 
@@ -556,15 +572,10 @@ def main(config):
     config.logdir.mkdir(parents=True, exist_ok=True)
     print('Logdir', config.logdir)
 
-    arg_dict = vars(config).copy()
-    del arg_dict['logdir']
 
-    with open(os.path.join(config.logdir, 'args.json'), 'w') as fout:
-        import json
-        json.dump(arg_dict, fout)
 
     # Create environments.
-    datadir = config.logdir / 'episodes'
+    datadir = config.checkpoint_logdir / 'episodes'
     writer = tf.summary.create_file_writer(
         str(config.logdir), max_queue=1000, flush_millis=20000)
     writer.set_as_default()
@@ -588,15 +599,11 @@ def main(config):
     step = count_steps(datadir, config)
     print(f'Simulating agent for {config.steps-step} steps.')
     agent = CVRL(config, datadir, actspace, writer)
-    if (config.logdir / 'variables.pkl').exists():
-        print('Load checkpoint.')
-        agent.load(config.logdir / 'variables.pkl')
+    # if (config.checkpoint_logdir / 'variables.pkl').exists():
+    #     print('Load checkpoint.')
+    #     agent.load(config.checkpoint_logdir / 'variables.pkl')
     state = None
     while step < config.steps:
-        print('Start evaluation.')
-        tools.simulate(
-            functools.partial(agent, training=False), test_envs, episodes=1)
-        writer.flush()
         print('Start collection.')
         steps = config.eval_every // config.action_repeat
         state = tools.simulate(agent, train_envs, steps, state=state)
@@ -617,5 +624,9 @@ if __name__ == '__main__':
         parser.add_argument(
             f'--{key}', type=tools.args_type(value), default=value)
     args = parser.parse_args()
-
+    with open(os.path.join(args.checkpoint_logdir, 'args.json'),'r') as load_f:
+        load_dict = json.load(load_f)
+    load_dict["logdir"] = args.logdir
+    load_dict["checkpoint_logdir"] = args.checkpoint_logdir
+    args = argparse.Namespace(**load_dict)
     main(args)

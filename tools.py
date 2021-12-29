@@ -67,7 +67,7 @@ def video_summary(name, video, step=None, fps=20):
     name = name if isinstance(name, str) else str(name)
     if np.issubdtype(video.dtype, np.floating):
         video = np.clip(255 * video, 0, 255).astype(np.uint8)
-    B, T, H, W, C = video.shape
+    B, T, H, W, C = video.shape    # (6, 50, 192, 64, 3)  
     try:
         frames = video.transpose((1, 2, 0, 3, 4)).reshape((T, H, B * W, C))
         summary = tf1.Summary()
